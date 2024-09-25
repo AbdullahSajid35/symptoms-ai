@@ -2,8 +2,9 @@ const ul = document.querySelector("ul"),
   input = document.querySelector(".input"),
   tagNumb = document.querySelector(".details span");
 
-let maxTags = 30,
-  tags = [];
+let maxTags = 30;
+let minTags = 5;
+tags = [];
 
 countTags();
 createTag();
@@ -14,7 +15,7 @@ function countTags() {
 }
 
 function handleSubmit() {
-  if (tags.length > 0) {
+  if (tags.length >= minTags) {
     fetch("https://zeeshan485-disease-prediction.hf.space/predict", {
       method: "POST",
       headers: {
@@ -72,7 +73,7 @@ function handleSubmit() {
         alert("An error occurred. Please try again later.");
       });
   } else {
-    alert("Please add at least one tags.");
+    alert(`Please add at least ${minTags} tags.`);
   }
 }
 
