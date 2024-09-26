@@ -100,7 +100,7 @@ body {
 }
 
 .password-input {
-  padding-right: 30px; 
+  padding-right: 30px;
   position: relative;
   border: 2px solid red;
 }
@@ -112,12 +112,20 @@ body {
   right: 10px; /* Adjust the right position as needed */
 }
 
-
 .loginBtn button {
   padding: 8px 20px;
   background: #063970;
   color: white;
   width: 200px;
+  border: none;
+  border-radius: 20px;
+  font-size: 1.4rem;
+}
+
+.reset-button {
+  padding: 8px 20px;
+  background: #063970;
+  color: white;
   border: none;
   border-radius: 20px;
   font-size: 1.4rem;

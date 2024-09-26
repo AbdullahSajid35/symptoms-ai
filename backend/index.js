@@ -14,7 +14,7 @@ app.use(bodyParser.json());
 
 const db = mysql.createConnection({
   host: "localhost",
-  port: "3306",
+  port: "3310",
   user: "root",
   password: "",
   database: "symptoms_ai",
@@ -25,6 +25,55 @@ db.connect((err) => {
     console.error("Error connecting to MySQL:", err);
     return;
   }
+});
+
+// Route to get user data by username
+app.get("/user/:username", (req, res) => {
+  console.log("GET /user/:username");
+  const username = req.params.username; // Get the username from the URL params
+
+  const selectQuery = "SELECT * FROM users WHERE Username = ?";
+
+  // Fetch the user data from the database
+  db.query(selectQuery, [username], (err, result) => {
+    if (err) {
+      console.error("Error fetching user data from MySQL:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      if (result.length > 0) {
+        // Send back the user data
+        console.log("User found:", result[0]);
+        res.status(200).json({ user: result[0] });
+      } else {
+        // User not found
+        res.status(404).json({ error: "User not found" });
+      }
+    }
+  });
+});
+// Route to get user data by Patient
+app.get("/patient/:patientId", (req, res) => {
+  console.log("GET /patient/:patientId");
+  const ID = req.params.patientId; // Get the username from the URL params
+
+  const selectQuery = "SELECT * FROM patients WHERE ID = ?";
+
+  // Fetch the user data from the database
+  db.query(selectQuery, [ID], (err, result) => {
+    if (err) {
+      console.error("Error fetching user data from MySQL:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      if (result.length > 0) {
+        // Send back the user data
+        console.log("User found:", result[0]);
+        res.status(200).json({ user: result[0] });
+      } else {
+        // User not found
+        res.status(404).json({ error: "User not found" });
+      }
+    }
+  });
 });
 
 app.post("/register", (req, res) => {
@@ -64,6 +113,49 @@ app.post("/register", (req, res) => {
           }
         });
       }
+    }
+  });
+});
+
+app.put("/edit-profile", (req, res) => {
+  const {
+    username,
+    firstName,
+    lastName,
+    email,
+    phoneNo,
+    password,
+    address, // Added address
+    city, // Added city
+    state, // Added state
+  } = req.body;
+
+  // Define the SQL query for updating the user's profile
+  const updateQuery = `
+    UPDATE users
+    SET Firstname = ?, Lastname = ?, Email = ?, PhoneNo = ?, Password = ?, Address = ?, City = ?, State = ?
+    WHERE Username = ?`;
+
+  // The values to be updated
+  const updateValues = [
+    firstName,
+    lastName,
+    email,
+    phoneNo,
+    password,
+    address, // Include address in the update values
+    city, // Include city in the update values
+    state, // Include state in the update values
+    username, // Username is used for identification
+  ];
+
+  // Perform the query to update the user profile
+  db.query(updateQuery, updateValues, (err, result) => {
+    if (err) {
+      console.error("Error updating user data in MySQL:", err);
+      res.status(500).json({ error: "Internal Server Error" });
+    } else {
+      res.status(200).json({ message: "Profile updated successfully" });
     }
   });
 });
