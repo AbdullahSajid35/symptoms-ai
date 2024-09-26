@@ -175,7 +175,6 @@
             console.error("Failed to fetch user data:", error);
           });
       });
-
       function generatePDF(patientData) {
         if (!patientData) {
           console.error("Patient data is undefined");
@@ -193,121 +192,151 @@
         const gray = "#04121c";
         const white = "#fff";
 
-        // Add logo and heading
+        // Header height
+        const headerHeight = 40;
+
+        // Add background for header
         doc.setFillColor(darkSlateGray);
-        doc.rect(0, 0, doc.internal.pageSize.width, 30, "F");
-        doc.setTextColor(white);
-        doc.setFontSize(24);
-        doc.setFont("helvetica", "bold");
-        doc.text("Symptoms AI", doc.internal.pageSize.width / 2, 20, {
-          align: "center",
-        });
+        doc.rect(0, 0, doc.internal.pageSize.width, headerHeight, "F");
 
-        // Reset text color for body
-        doc.setTextColor(gray);
+        // Add logo
+        const logoWidth = 30; // Adjust as needed
+        const logoHeight = 30; // Adjust as needed
+        const logoX = (doc.internal.pageSize.width - logoWidth) / 2;
+        const logoY = 5;
 
-        // Add "Doctor Information" heading
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text("Doctor Information", 20, 40);
+        // Load the image
+        const img = new Image();
+        img.onload = function () {
+          doc.addImage(img, "PNG", logoX, logoY, logoWidth, logoHeight);
 
-        // Add doctor name and date
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "normal");
-        const doctorName = `Dr. ${patientData?.user?.DoctorFname || ""} ${
-          patientData?.user?.DoctorLname || ""
-        }`.trim();
-        const today = new Date().toLocaleDateString();
-        doc.text(`Name: ${doctorName}`, 20, 50);
-        doc.text(`Date: ${today}`, 20, 58);
+          // Add "Symptoms AI" text below the logo
+          doc.setTextColor(white);
+          doc.setFontSize(16);
+          doc.setFont("helvetica", "bold");
 
-        // Add title
-        doc.setFontSize(20);
-        doc.setFont("helvetica", "bold");
-        doc.text("Patient Report", doc.internal.pageSize.width / 2, 75, {
-          align: "center",
-        });
-
-        // Reset font for body text
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-
-        // Add patient information in two columns
-        let leftColX = 20;
-        let rightColX = doc.internal.pageSize.width / 2 + 10;
-        let yPos = 90;
-        const lineHeight = 6;
-
-        const addText = (label, value, x, y) => {
-          const text = `${label}: ${value || "N/A"}`;
-          doc.text(text, x, y);
+          // Continue with the rest of the PDF generation
+          generateRestOfPDF();
         };
+        img.src = "./images/logo.jpg"; // Update this path to your logo's location
 
-        // Left column
-        addText("Name", patientData?.user?.Firstname, leftColX, yPos);
-        yPos += lineHeight;
-        addText("Gender", patientData?.user?.Gender, leftColX, yPos);
-        yPos += lineHeight;
-        addText("ID", patientData?.user?.ID, leftColX, yPos);
-        yPos += lineHeight;
-        addText("Address", patientData?.user?.Address, leftColX, yPos);
-        yPos += lineHeight;
-        addText("Contact", patientData?.user?.Contact, leftColX, yPos);
+        function generateRestOfPDF() {
+          // Reset text color for body
+          doc.setTextColor(gray);
 
-        // Reset yPos for right column
-        yPos = 90;
+          let yPos = headerHeight + 10; // Start content after the header
 
-        // Right column
-        addText("Disease", patientData?.user?.Disease, rightColX, yPos);
-        yPos += lineHeight;
-        addText("Examination", patientData?.user?.Examination, rightColX, yPos);
-        yPos += lineHeight;
-        addText(
-          "Marital Status",
-          patientData?.user?.MaritalStatus,
-          rightColX,
-          yPos
-        );
-        yPos += lineHeight;
-        addText(
-          "Date of Birth",
-          patientData?.user?.PlaceOfBirth,
-          rightColX,
-          yPos
-        );
+          // Add "Doctor Information" heading
+          doc.setFontSize(14);
+          doc.setFont("helvetica", "bold");
+          doc.text("Doctor Information", 20, yPos);
+          yPos += 10;
 
-        yPos = 120; // Adjust this value as needed
+          // Add doctor name and date
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "normal");
+          const doctorName = `Dr. ${patientData?.user?.DoctorFname || ""} ${
+            patientData?.user?.DoctorLname || ""
+          }`.trim();
+          const today = new Date().toLocaleDateString();
+          doc.text(`Name: ${doctorName}`, 20, yPos);
+          yPos += 8;
+          doc.text(`Date: ${today}`, 20, yPos);
+          yPos += 15;
 
-        // Add treatment plan
-        doc.setFont("helvetica", "bold");
-        doc.text("Treatment Plan:", 20, yPos);
-        yPos += lineHeight;
-        doc.setFont("helvetica", "normal");
-        doc.text(
-          patientData?.user?.TreatmentPlan || "No treatment plan available",
-          20,
-          yPos,
-          { maxWidth: 170 }
-        );
-        yPos +=
-          doc.getTextDimensions(
+          // Add title
+          doc.setFontSize(20);
+          doc.setFont("helvetica", "bold");
+          doc.text("Patient Report", doc.internal.pageSize.width / 2, yPos, {
+            align: "center",
+          });
+          yPos += 15;
+
+          // Reset font for body text
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+
+          // Add patient information in two columns
+          let leftColX = 20;
+          let rightColX = doc.internal.pageSize.width / 2 + 10;
+          const lineHeight = 6;
+
+          const addText = (label, value, x, y) => {
+            const text = `${label}: ${value || "N/A"}`;
+            doc.text(text, x, y);
+          };
+
+          // Left column
+          addText("Name", patientData?.user?.Firstname, leftColX, yPos);
+          yPos += lineHeight;
+          addText("Gender", patientData?.user?.Gender, leftColX, yPos);
+          yPos += lineHeight;
+          addText("ID", patientData?.user?.ID, leftColX, yPos);
+          yPos += lineHeight;
+          addText("Address", patientData?.user?.Address, leftColX, yPos);
+          yPos += lineHeight;
+          addText("Contact", patientData?.user?.Contact, leftColX, yPos);
+
+          // Reset yPos for right column
+          let rightYPos = yPos - lineHeight * 4;
+
+          // Right column
+          addText("Disease", patientData?.user?.Disease, rightColX, rightYPos);
+          rightYPos += lineHeight;
+          addText(
+            "Examination",
+            patientData?.user?.Examination,
+            rightColX,
+            rightYPos
+          );
+          rightYPos += lineHeight;
+          addText(
+            "Marital Status",
+            patientData?.user?.MaritalStatus,
+            rightColX,
+            rightYPos
+          );
+          rightYPos += lineHeight;
+          addText(
+            "Date of Birth",
+            patientData?.user?.PlaceOfBirth,
+            rightColX,
+            rightYPos
+          );
+
+          yPos += 20; // Add some space before treatment plan
+
+          // Add treatment plan
+          doc.setFont("helvetica", "bold");
+          doc.text("Treatment Plan:", 20, yPos);
+          yPos += lineHeight;
+          doc.setFont("helvetica", "normal");
+          doc.text(
             patientData?.user?.TreatmentPlan || "No treatment plan available",
+            20,
+            yPos,
             { maxWidth: 170 }
-          ).h + lineHeight;
+          );
+          yPos +=
+            doc.getTextDimensions(
+              patientData?.user?.TreatmentPlan || "No treatment plan available",
+              { maxWidth: 170 }
+            ).h + lineHeight;
 
-        // Add patient history
-        doc.setFont("helvetica", "bold");
-        doc.text("Patient History:", 20, yPos);
-        yPos += lineHeight;
-        doc.setFont("helvetica", "normal");
-        const history = document.getElementById("history").value.split("\n");
-        history.forEach((item) => {
-          doc.text(`• ${item}`, 25, yPos, { maxWidth: 165 });
-          yPos += doc.getTextDimensions(item, { maxWidth: 165 }).h + 2;
-        });
+          // Add patient history
+          doc.setFont("helvetica", "bold");
+          doc.text("Patient History:", 20, yPos);
+          yPos += lineHeight;
+          doc.setFont("helvetica", "normal");
+          const history = document.getElementById("history").value.split("\n");
+          history.forEach((item) => {
+            doc.text(`• ${item}`, 25, yPos, { maxWidth: 165 });
+            yPos += doc.getTextDimensions(item, { maxWidth: 165 }).h + 2;
+          });
 
-        // Save the PDF
-        doc.save("patient_report.pdf");
+          // Save the PDF
+          doc.save("patient_report.pdf");
+        }
       }
     </script>
   </body>

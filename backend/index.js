@@ -4,7 +4,8 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const randomstring = require("randomstring");
 const sgMail = require("@sendgrid/mail");
-
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const app = express();
 const port = 3000;
 
@@ -76,6 +77,125 @@ app.get("/patient/:patientId", (req, res) => {
   });
 });
 
+//  FORGOT PASSWORD
+// Forgot password route
+app.post("/forgot-password", (req, res) => {
+  const { email } = req.body;
+
+  // Check if email exists in the database
+  const query = "SELECT * FROM users WHERE Email = ?";
+  db.query(query, [email], (err, results) => {
+    if (err) {
+      console.error("Error querying database:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Email not found" });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const expiresAt = new Date(Date.now() + 3600000); // Token expires in 1 hour
+
+    // Store reset token in the database
+    const updateQuery =
+      "UPDATE users SET ResetToken = ?, ResetTokenExpires = ? WHERE Email = ?";
+    db.query(updateQuery, [resetToken, expiresAt, email], (err) => {
+      if (err) {
+        console.error("Error updating reset token:", err);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+
+      //
+      const resetUrl = `http://localhost:5500/reset-password.html?token=${resetToken}`;
+
+      const transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        auth: {
+          user: "rhett.jakubowski62@ethereal.email",
+          pass: "Ea1yyBfNj4ZRV8wVUV",
+        },
+      });
+
+      // Email options
+      let mailOptions = {
+        from: '"syedmoazamali4321@gmail.com', // sender address (must be verified in Brevo)
+        to: email, // recipient
+        subject: "Password Reset", // Subject line
+        text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n
+               Please click on the following link, or paste this into your browser to complete the process:\n\n
+               ${resetUrl}\n\n
+               If you did not request this, please ignore this email and your password will remain unchanged.\n`, // plain text body
+        html: `<p>You are receiving this because you (or someone else) have requested the reset of the password for your account.</p>
+               <p>Please click on the following link, or paste this into your browser to complete the process:</p>
+               <p><a href="${resetUrl}">${resetUrl}</a></p>
+               <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>`, // html body
+      };
+
+      // Send email
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Error sending email:", error);
+          return res.status(500).json({ error: "Error sending email" });
+        }
+        console.log("Message sent: %s", info.messageId);
+        res.json({ message: "Password reset email sent" });
+      });
+    });
+  });
+});
+
+app.post("/reset-password", (req, res) => {
+  console.log("POST /reset-password");
+  const { token, password: newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Token and new password are required" });
+  }
+
+  // Find user with the given reset token and check if it's still valid
+  const query =
+    "SELECT * FROM users WHERE ResetToken = ? AND ResetTokenExpires > NOW()";
+  db.query(query, [token], (err, results) => {
+    if (err) {
+      console.error("Error querying database:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    const user = results[0];
+    console.log("User found:", user);
+
+    // Use user.id instead of user.ID
+    const updateQuery =
+      "UPDATE users SET Password = ?, ResetToken = NULL, ResetTokenExpires = NULL WHERE id = ?";
+    console.log("Update query:", updateQuery);
+    console.log("Update values:", [newPassword, user.id]);
+
+    db.query(updateQuery, [newPassword, user.id], (updateErr, updateResult) => {
+      if (updateErr) {
+        console.error("Error updating password:", updateErr);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+
+      console.log("Update result:", updateResult);
+      console.log("Rows affected:", updateResult.affectedRows);
+
+      if (updateResult.affectedRows === 0) {
+        return res.status(400).json({ error: "No user was updated" });
+      }
+
+      res.status(200).json({ message: "Password reset successful" });
+    });
+  });
+});
 app.post("/register", (req, res) => {
   const { firstname, lastname, email, password, username, PhoneNo } = req.body;
 
@@ -183,9 +303,6 @@ app.post("/login", (req, res) => {
     }
   });
 });
-sgMail.setApiKey(
-  "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"
-);
 
 app.post("/patient_info", (req, res) => {
   const {
