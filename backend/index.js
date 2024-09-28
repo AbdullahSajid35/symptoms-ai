@@ -111,11 +111,12 @@ app.post("/forgot-password", (req, res) => {
       const resetUrl = `http://localhost:5500/reset-password.html?token=${resetToken}`;
 
       const transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
+        service: "gmail",
+        host: "smtp.gmail.com",
         port: 587,
         auth: {
-          user: "rhett.jakubowski62@ethereal.email",
-          pass: "Ea1yyBfNj4ZRV8wVUV",
+          user: "waad63498@gmail.com",
+          pass: "zwepbcfcdirtwjkr",
         },
       });
 
